@@ -1,0 +1,121 @@
+# The research objective proposed is the study of nematode distribution across different geographical regions (countries) to observe distribution, diversity, and species richness. TO do so we'll be using functions from tidyverse, tibble, biostrings and vegan packages to open, read, and analyse DNA barcode data obtained from BOLD. 
+
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("tidyr")
+library(tidyr)
+install.packages("dplyr")
+library(dplyr)
+install.packages("tibble")
+library(tibble)
+biocLite("Biostrings")
+biocLite("muscle")
+biocLite("DECIPHER")
+library(Biostrings)
+install.packages("readr")
+library(readr)
+install.packages("vegan")
+library(vegan)
+## install iNEXT package from CRAN
+install.packages("iNEXT")
+library(iNEXT)
+library(ggplot2)
+library(MASS)
+
+#Loaded selected data set of Nematoda specimen using Bold Api
+Nematodes <- read_tsv("http://www.boldsystems.org/index.php/API_Public/specimen?taxon=Nematoda&format=tsv")
+
+write_tsv(Nematodes, "Nematoda_BOLD_data.tsv") #creating a new data file in working directory
+Nematodes <- read_tsv("Nematoda_BOLD_data.tsv") #From here on  read in the data.
+
+#--------------------------------------Starting Analysis------------------------------------#
+
+length(Nematodes$species_taxID) #Let's start off with how many samples we are working with
+
+summary(Nematodes) #Look at summary of data
+
+markercodes <- c(colnames(Nematodes)) #Examine marker codes to work with 
+markercodes 
+
+sum(is.na(Nematodes$species_taxID)) #How many NA values present in wanted markercode
+
+sum(is.na(Nematodes$country))
+
+NematodeSpecies <- Nematodes$species_taxID  #Assign chosen markercode to new object, species_taxID can be compared across different countries
+NematodeSpecies
+
+SubspeciesNames <- na.omit(Nematodes$subspecies_name) #Sub ecies names could have been a contender as well but there are only 9 named subspecies identified
+SubspeciesNames[1:9]
+
+#Comparing sample numbers to countries and ranking them using the group_by tidy function
+#What country has the most samples?
+
+Nematodes %>%
+  group_by(country) %>% 
+  summarize(count = length(species_taxID))  %>% 
+  arrange(desc(count)) 
+
+#Selecting by Country and Species ID
+
+NematodesCountryTaxID = Nematodes %>% #use select to extract two columns from Nematodes
+  select(country, species_taxID)
+
+NematodesCountryTaxID <- na.omit(unique(NematodesCountryTaxID)) #Assign to new object
+NematodesCountryTaxID
+
+#Instances of each species
+grep("201809",NematodesCountryandTaxID) #How many times is a given species found? 
+
+
+#Once we have assembled the dataframe, we can start working on diversity indexes 
+
+
+NematodesSample <- sample_n(Nematodes, 1000) #take a smaller sample of the original tsv file
+
+
+NematodesGrouped <- NematodesSample %>% #Group by country and species using group_by
+  group_by(country, species_taxID) %>%
+  count(species_taxID)
+
+
+commNematodes <- spread(NematodesGrouped, species_taxID, n) # Turn into a commmunity object using the spread() function  
+
+
+commNematodes[is.na(commNematodes)] <- 0 #Replace NA values with 0 
+
+commNematodes <- commNematodes %>% 
+  remove_rownames %>%
+  column_to_rownames(var="country")
+
+
+#Our first analysis will be the shannon-wiener index as a measure of diversity 
+NematodesDiversityIndex1 <- diversity(commNematodes, index = "shannon") 
+
+mean(NematodesDiversityIndex1) #we can then compute the mean diversity index
+
+
+#Moving on to Species richness we use rarefy(), a rarefaction measure 
+NematodesRar<-rarefy(commNematodes,1)
+plot(NematodesRar) #this can also be plotted for visual representation
+
+#Specc accum curve
+plot(specaccum(commNematodes))
+#A species accumulation curve can also give us an indicatio nof species richness across sample sites (countries in our case)
+
+#Using the iNext package further plots can be generated
+
+library(ggplot2)
+
+#iNext requiresa data to be converted to its wanted format
+
+mCommNematodes <-  as.matrix(apply(commNematodes[,-1],2,as.integer)) 
+NematodesList = list(A = mCommNematodes) #Successfuly creating a list 
+
+iNEXT(NematodesList) #Not a successful attempt due to an eror in data structure
+
+
+#--------------------------------------Conclusions------------------------------------#
+
+#When comparing the data we discovered that over a third of the species_taxID markers are missing their country annotation. The country with the most Nematode samples from the entire sdataset collected is the US, at 576. There was some repetition of species_taxID observed but it tends to be limited to 2-3 countries sharing Nematode samples. To interpret the results obtained using Diversitty and Species richness functions we need to consider them in the context of our sample. if we take the exponential of the mean index of 0.7760868 we get a value of approx. 2, suggesting that it has an equivalent diversity of with 2 equally-common species. The rarefaction plot computes species richness for a given sample, by constructing rarefaction. The plot generated fom our data was not a good indicator of species richness due to variation. Finally the species accumulation curve plots the cumulative number of species found in an environment as a function of the sampling effort. Our plot showed a strong positive correlation between sampling effort and species found.
+
+# Reference:https://bpmsg.com/tag/shannon-wiener-index/
