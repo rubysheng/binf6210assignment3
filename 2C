@@ -1,5 +1,5 @@
 #Packages to Install####
-install.packages("rentrez")
+
 install.packages("seqinr")
 install.packages("stringr")
 install.packages("tidyverse")
@@ -9,36 +9,20 @@ biocLite("muscle")
 biocLite("DECIPHER")
 install.packages("stringi")
 install.packages("ape")
-install.packages("adegenet", dep=TRUE)
-install.packages("phangorn", dep=TRUE)
-install.packages("dplyr")
 install.packages("devtools")
 devtools::install_github("ropensci/rentrez")
-install.packages("kmer")
 source("https://bioconductor.org/biocLite.R")
 biocLite("Biostrings")
 
+library(tidyverse)
 library(Biostrings)
 library(seqinr)
-library(rentrez)
 library(stringr)
-library(tidyverse)
-library("msa")
-library(Biostrings)
 library(muscle)
 library(msa)
 library(DECIPHER)
 library(ape)
 library(stringi)
-library(stats)
-library(ade4)
-library("rentrez")
-library("kmer")
-library("dplyr")
-
-
-
-
 
 
 #### PART C #### 
@@ -52,7 +36,8 @@ library("dplyr")
 
 
 ##2 Download the data in FASTA format and convert it to a data frame.
-
+install.packages("rentrez")
+library(rentrez)
 
 entrez_dbs() # Use the entrez_dbs() function to retrieve the names of databases that are available through EUtils.
 entrez_db_searchable("nuccore")
@@ -62,15 +47,13 @@ daphnia_search <- entrez_search(db = "nuccore", term = "Daphnia[ORGN] AND 16S AN
 #using the bold package to retrieve sequences with geographical data
 
 install.packages("bold")
-library("bold")
+library(bold)
 
 #Loaded selected data set of Daphnia specimen using Bold Api
-
 daphnia_bold <- read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Daphnia&format=tsv")
 
 summary(daphnia_bold) #Look at summary of data
 
-library(dplyr)
 daphnia_bold %>%
   select(bin_uri, species_name, nucleotides, country) -> daphnia_bold_df #select function to extract wanted marker columns
 
@@ -133,32 +116,37 @@ sample_CH_dentifera <- sample(daphnia_bold_CH_dentifera$nucleotides,1) #sample 1
 
 hist1.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_dentifera) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.92 similarity 
 
-x1 <- c("CA dentifera vs CH dentifera","CA Magna vs CH Magna")
+x1 <- c("CA Magna vs CH Magna","CA dentifera vs CH dentifera")
 y1 <- c(hist1.1,hist1.2)
 
-barplot(y1, main="Same species in different countries", xlab=c("1. CA dentifera vs CH dentifera = 0.92","2. CA Magna vs CH Magna = 0.86"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y1, main="Same species in different countries", xlab=c("1. CA dentifera vs CH dentifera ","2. CA Magna vs CH Magna"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+y1.1<-round(y1,5)
+text(1:10*1.2-.5,y1.1,y1.1)
 
 
 #Barplot 2 ####
 
 #different species same countries 1
 
-daphnia_bold_CA_pulex <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
+daphnia_bold_CA_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
 
 sample_CA_magna <- sample(daphnia_bold_CA_magna$nucleotides,1)
-sample_CA_dentifera <- sample(daphnia_bold_CA_pulex$nucleotides,1)
 
-hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_pulex) # 0.47 similarity
+sample_CA_dentifera <- sample(daphnia_bold_CA_dentifera$nucleotides,1)
+
+hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_dentifera) # 0.47 similarity
 
 #different species same countries 2
 
 hist2.2 <- levenshteinSim(sample_CH_magna , sample_CH_dentifera) # 0.75 similarity 
 
-x2 <- c("CA Magna  vs CA Pulex", "CH Magna vs CH Dentifera")
+x2 <- c("CA Magna  vs CA Dentifera", "CH Magna vs CH Dentifera")
 y2 <- c(hist2.1,hist2.2)
 
 
-barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Pulex = 0.47","2. CH Magna vs CH Dentifera = 0.75"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Dentifera ","2. CH Magna vs CH Dentifera "), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+y2.1<-round(y2,5)
+text(1:10*1.2-.5,y2.1,y2.1)
 
 
 
@@ -173,47 +161,46 @@ hist3.1 <- levenshteinSim(sample_CA_magna , sample_CH_dentifera) # 0.73 similari
 daphnia_bold_CH_galeata <- subset(daphnia_bold_df,species_name=="Daphnia galeata" & country== "China") 
 sample_CH_galeata <- sample(daphnia_bold_CH_galeata$nucleotides,1)
 
-hist3.2 <- levenshteinSim(sample_CA_pulex , sample_CH_galeata) # 0.48
+hist3.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_galeata) # 0.48
 
-
-x3 <- c("CA Magna vs CH dentifera", "CA pulex vs CA galeata")
+x3 <- c("CA Magna vs CH Dentifera", "CA Dentifera vs CH Galeata")
 y3 <- c(hist3.1,hist3.2)
 
-barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH dentifera = 0.73","2. CA pulex vs CA galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH Dentifera = 0.73","2. CA Dentifera vs CH Galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+y3.1<-round(y3,5)
+text(1:10*1.2-.5,y3.1,y3.1)
 
-
+###################################################################################################
 #World map
-install.packages("ggmap")
-install.packages("maptools")
-install.packages("maps")
-library("ggmap")
-library(maptools)
-library(maps)
 
-Country_list <- unique(daphnia_bold_df$country)
+install.packages('rworldmap')
+library(rworldmap)
 
+count_daphnia_bold <- daphnia_bold_df %>%
+  group_by(country) %>%
+  summarise(n = length(bin_uri)) %>%
+  arrange(desc(n)) %>%
+  print()
+length(unique(count_daphnia_bold$n))  
+Country_list <- unique(count_daphnia_bold$country)
 countries <- c(Country_list)
-ll.countries <- geocode(countries)
-visit.x <- ll.countries$lon
-visit.y <- ll.countries$lat
 
-map("world", fill=TRUE, col="white", bg="lightblue", ylim=c(-60, 90), mar=c(0,0,0,0))
-points(visit.x,visit.y, col="red", pch=16)
-
-mp <- NULL
-mapWorld <- borders("world", colour="gray50", fill="gray50") # create a layer of borders
-mp <- ggplot() +   mapWorld
-
-mp 
-# Error due ot queery limit from google restrictions
-
-
-
-
+country_iso3 <- unlist(lapply(countries, rwmGetISO3))
+map_df <- data.frame(country = country_iso3, Value = count_daphnia_bold$n)
+join_map <- joinCountryData2Map(map_df, joinCode = "ISO3", nameJoinColumn = "country")
+#these three functions below need to run together.
+mapDevice()
+mapCountryData(mapToPlot = join_map, nameColumnToPlot = "Value", numCats = 17,
+               xlim = NA, ylim = NA, mapRegion = "world", catMethod = "logFixedWidth",
+               colourPalette = "terrain", addLegend = TRUE, borderCol = "grey",
+               mapTitle = "", oceanCol = 'lightblue', aspect = 1,
+               missingCountryCol = "white", add = FALSE, nameColumnToHatch = "",
+               lwd = 0.5)
+dev.copy2pdf(file = 'map.pdf')
 
 # 6##### 
 #Provide an interpretation of your visualization. Also, what further work or statistical test would you hypothetically perform in the future to answer your biological question more fully? (Note that answering this section does not require R code to perform such an analysis, but you are welcome to do so if you wish.)
- 
+
 #The results from our statistical analysis mostly math our expectations and original hypothesis. Barplot 1 showing the similarity score between the same speices (magna and dentifera) in two different regions (Canada and China) are expected. The same species has very high similarity (0.80-0.90) despite being in a different region while also not being 100% identical.
 
 #Barplot 2 shows how different species relate to eachother when in the same region. Here the results for each pair differ where Magna and Pulex have a relatively low similarity score in their DNA sequence - 0.47 whilst Magna and Dentifera have a much higher one - 0.75. This suggests that Magna and Dentifera are more closely related in their phylogeny. 
