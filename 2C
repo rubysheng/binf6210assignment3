@@ -1,14 +1,6 @@
 #Packages to Install####
 
-install.packages("seqinr")
-install.packages("stringr")
 install.packages("tidyverse")
-biocLite("msa")
-browseVignettes("msa")
-biocLite("muscle")
-biocLite("DECIPHER")
-install.packages("stringi")
-install.packages("ape")
 install.packages("devtools")
 devtools::install_github("ropensci/rentrez")
 source("https://bioconductor.org/biocLite.R")
@@ -16,13 +8,7 @@ biocLite("Biostrings")
 
 library(tidyverse)
 library(Biostrings)
-library(seqinr)
-library(stringr)
-library(muscle)
-library(msa)
-library(DECIPHER)
-library(ape)
-library(stringi)
+
 
 
 #### PART C #### 
@@ -90,8 +76,7 @@ common_species <- intersect(daphnia_bold_CA$species_name, daphnia_bold_CH$specie
 
 install.packages("stringdist")
 library(stringdist)
-install.packages("RecordLinkage")
-library(RecordLinkage)
+
 
 
 #Barplot 1 ####
@@ -104,7 +89,10 @@ daphnia_bold_CH_magna <- subset(daphnia_bold_df,species_name=="Daphnia magna" & 
 sample_CA_magna <- sample(daphnia_bold_CA_magna$nucleotides,1) #sample 1 magna sequence from Canada
 sample_CH_magna <- sample(daphnia_bold_CH_magna$nucleotides,1) #sample 1 magna sequence from China
 
-hist1.1 <- levenshteinSim(sample_CA_magna , sample_CH_magna) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.86 similarity 
+align1.1<-pairwiseAlignment(sample_CA_magna, sample_CH_magna, gapOpening = -3, gapExtension = -1)
+
+hist1.1 <- score(align1.1) 
+#levenshteinSim(sample_CA_magna , sample_CH_magna) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.86 similarity 
 
 #same species different countries 2
 
@@ -114,12 +102,16 @@ daphnia_bold_CH_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia denti
 sample_CA_dentifera <- sample(daphnia_bold_CA_dentifera$nucleotides,1) #sample 1 dentifera sequence from Canada
 sample_CH_dentifera <- sample(daphnia_bold_CH_dentifera$nucleotides,1) #sample 1 dentifera sequence from China
 
-hist1.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_dentifera) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.92 similarity 
+align1.2<-pairwiseAlignment(sample_CA_dentifera, sample_CH_dentifera, gapOpening = -3, gapExtension = -1)
+
+hist1.2 <- score(align1.2) 
+#hist1.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_dentifera) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.92 similarity 
 
 x1 <- c("CA Magna vs CH Magna","CA dentifera vs CH dentifera")
 y1 <- c(hist1.1,hist1.2)
+ymax1 <- max(y1)+100
 
-barplot(y1, main="Same species in different countries", xlab=c("1. CA dentifera vs CH dentifera ","2. CA Magna vs CH Magna"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y1, main="Same species in different countries", xlab=c("1. CA dentifera vs CH dentifera ","2. CA Magna vs CH Magna"), ylab="Score of Alignment (gapOpening = -3, gapExtension = -1)", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,ymax1))
 y1.1<-round(y1,5)
 text(1:10*1.2-.5,y1.1,y1.1)
 
@@ -129,46 +121,66 @@ text(1:10*1.2-.5,y1.1,y1.1)
 #different species same countries 1
 
 daphnia_bold_CA_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
+##daphnia_bold_CA_pulex <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
 
 sample_CA_magna <- sample(daphnia_bold_CA_magna$nucleotides,1)
 
 sample_CA_dentifera <- sample(daphnia_bold_CA_dentifera$nucleotides,1)
 
-hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_dentifera) # 0.47 similarity
+align2.1<-pairwiseAlignment(sample_CA_magna, sample_CA_dentifera, gapOpening = -3, gapExtension = -1)
+
+hist2.1 <- score(align2.1)
+#hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_dentifera) # 0.47 similarity
+##hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_pulex) # 0.47 similarity
 
 #different species same countries 2
+align2.2<-pairwiseAlignment(sample_CH_magna, sample_CH_dentifera, gapOpening = -3, gapExtension = -1)
 
-hist2.2 <- levenshteinSim(sample_CH_magna , sample_CH_dentifera) # 0.75 similarity 
+hist2.2 <- score(align2.2)
+#hist2.2 <- levenshteinSim(sample_CH_magna , sample_CH_dentifera) # 0.75 similarity 
 
 x2 <- c("CA Magna  vs CA Dentifera", "CH Magna vs CH Dentifera")
+##x2 <- c("CA Magna  vs CA Pulex", "CH Magna vs CH Dentifera")
 y2 <- c(hist2.1,hist2.2)
+ymax2 <- max(y2)+100
 
-
-barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Dentifera ","2. CH Magna vs CH Dentifera "), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Dentifera ","2. CH Magna vs CH Dentifera "), ylab="Score of Alignment (gapOpening = -3, gapExtension = -1)", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,ymax2))
 y2.1<-round(y2,5)
 text(1:10*1.2-.5,y2.1,y2.1)
 
+##barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Pulex = 0.47","2. CH Magna vs CH Dentifera = 0.75"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
 
 
 #Barplot 3 ####
 
 #different species different countries 1
 
-hist3.1 <- levenshteinSim(sample_CA_magna , sample_CH_dentifera) # 0.73 similarity
+align3.1<-pairwiseAlignment(sample_CA_magna, sample_CH_dentifera, gapOpening = -3, gapExtension = -1)
+
+hist3.1 <- score(align3.1)
+#hist3.1 <- levenshteinSim(sample_CA_magna , sample_CH_dentifera) # 0.73 similarity
 
 #different species different countries 2
 
 daphnia_bold_CH_galeata <- subset(daphnia_bold_df,species_name=="Daphnia galeata" & country== "China") 
 sample_CH_galeata <- sample(daphnia_bold_CH_galeata$nucleotides,1)
 
-hist3.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_galeata) # 0.48
+align3.2<-pairwiseAlignment(sample_CA_dentifera, sample_CH_galeata, gapOpening = -3, gapExtension = -1)
+
+hist3.2 <- score(align3.2)
+#hist3.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_galeata) # 0.48
+##hist3.2 <- levenshteinSim(sample_CA_pulex , sample_CH_galeata) # 0.48
 
 x3 <- c("CA Magna vs CH Dentifera", "CA Dentifera vs CH Galeata")
+##x3 <- c("CA Magna vs CH dentifera", "CA pulex vs CA galeata")
 y3 <- c(hist3.1,hist3.2)
+ymax3 <- max(y3)+100
 
-barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH Dentifera = 0.73","2. CA Dentifera vs CH Galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH Dentifera = 0.73","2. CA Dentifera vs CH Galeata = 0.48"), ylab="Score of Alignment (gapOpening = -3, gapExtension = -1)", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,ymax3))
 y3.1<-round(y3,5)
 text(1:10*1.2-.5,y3.1,y3.1)
+##barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH dentifera = 0.73","2. CA pulex vs CA galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+
 
 ###################################################################################################
 #World map
@@ -189,13 +201,13 @@ country_iso3 <- unlist(lapply(countries, rwmGetISO3))
 map_df <- data.frame(country = country_iso3, Value = count_daphnia_bold$n)
 join_map <- joinCountryData2Map(map_df, joinCode = "ISO3", nameJoinColumn = "country")
 #these three functions below need to run together.
-mapDevice()
-mapCountryData(mapToPlot = join_map, nameColumnToPlot = "Value", numCats = 17,
+mapDevice(mapCountryData(mapToPlot = join_map, nameColumnToPlot = "Value", numCats = 17,
                xlim = NA, ylim = NA, mapRegion = "world", catMethod = "logFixedWidth",
                colourPalette = "terrain", addLegend = TRUE, borderCol = "grey",
                mapTitle = "", oceanCol = 'lightblue', aspect = 1,
                missingCountryCol = "white", add = FALSE, nameColumnToHatch = "",
-               lwd = 0.5)
+               lwd = 0.5))
+
 dev.copy2pdf(file = 'map.pdf')
 
 # 6##### 
