@@ -1,0 +1,231 @@
+#Packages to Install####
+install.packages("rentrez")
+install.packages("seqinr")
+install.packages("stringr")
+install.packages("tidyverse")
+biocLite("msa")
+browseVignettes("msa")
+biocLite("muscle")
+biocLite("DECIPHER")
+install.packages("stringi")
+install.packages("ape")
+install.packages("adegenet", dep=TRUE)
+install.packages("phangorn", dep=TRUE)
+install.packages("dplyr")
+install.packages("devtools")
+devtools::install_github("ropensci/rentrez")
+install.packages("kmer")
+source("https://bioconductor.org/biocLite.R")
+biocLite("Biostrings")
+
+library(Biostrings)
+library(seqinr)
+library(rentrez)
+library(stringr)
+library(tidyverse)
+library(muscle)
+library(msa)
+library(DECIPHER)
+library(ape)
+library(stringi)
+library(stats)
+library(ade4)
+library(kmer)
+
+
+
+
+
+
+
+#### PART C #### 
+
+#Adapting content from this course and your own independent learning to create new research (30 marks)
+
+#1. Read over the below and then define a biological question to address. (An example: Do sister species live in the same geographic region or different geographic regions? Or, is trait X phylogenetically conserved on the Daphnia phylogeny?)
+
+
+# My research question: Is georgraphy represented in genes in Daphnia species. Comparing gene similarity between different species in the same location
+
+
+##2 Download the data in FASTA format and convert it to a data frame.
+
+
+entrez_dbs() # Use the entrez_dbs() function to retrieve the names of databases that are available through EUtils.
+entrez_db_searchable("nuccore")
+
+daphnia_search <- entrez_search(db = "nuccore", term = "Daphnia[ORGN] AND 16S AND rRNA[Feature key] AND 1:500[Sequence Length]  NOT(whole OR complete)", retmax = 200) #setting retmax to 200, can increase up to around 350 in given hit
+
+#using the bold package to retrieve sequences with geographical data
+
+install.packages("bold")
+library(bold)
+
+#Loaded selected data set of Daphnia specimen using Bold Api
+##library(tidyverse)
+daphnia_bold <- read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Daphnia&format=tsv")
+
+summary(daphnia_bold) #Look at summary of data
+
+library(dplyr)
+daphnia_bold %>%
+  select(bin_uri, species_name, nucleotides, country) -> daphnia_bold_df #select function to extract wanted marker columns
+
+daphnia_bold_df <- as.data.frame(daphnia_bold_df) #convert to dataframe from tbl
+
+length(is.na(daphnia_bold_df)) #identify NA values
+
+daphnia_bold_df <- na.omit(daphnia_bold_df) #remove them
+
+#2. Create a phylogenetic hypothesis for a taxonomic group of your choice. For most class members, I recommend to use the phylogeny that you created in Part B as your starting point for Part C. That phylogeny would include one sequence per OTU or per species. For advanced users and/or those seeking a challenge, you are welcome to create your own phylogeny on a taxonomic group of your choice.
+
+#Hypothesis that geography will be represented in the genes of selected Daphnia species
+
+#compare same species in different locations
+#compare different species in same locations
+#compare different species in different locations
+#What patterns do we see?
+
+#3. Seek out other biological or geographic data for the species in your sequence alignment. Examples could include meta-data from NCBI, data from BOLD, data from GBIF, other genetic data, or data from other sources that you find. (Hint: You might wish to download data from the entire genus Daphnia from those other sources as your starting point.)
+
+#comparing Australia and Canada by subsetting
+
+daphnia_bold_CA <- subset(daphnia_bold_df,country=="Canada")
+daphnia_bold_CH <- subset(daphnia_bold_df,country=="China")
+
+length(unique(daphnia_bold_CA$species_name)) #23 unique species sampled in canada
+length(unique(daphnia_bold_CH$species_name)) #5 unique species sampled in australia
+
+common_species <- intersect(daphnia_bold_CA$species_name, daphnia_bold_CH$species_name)#compare overlap of species: magna, dentifera
+
+#4. Using the species identification, match up your sequence data with the other biological trait or geographical parameter you have chosen.
+
+#5. Prepare a visualization that maps your chosen biological trait or geographical parameter onto your phylogeny, such as by using maximum parsimony or maximum likelihood character mapping.
+
+install.packages("stringdist")
+library(stringdist)
+install.packages("RecordLinkage")
+library(RecordLinkage)
+
+
+#Barplot 1 ####
+
+#same species different countries 1 
+
+daphnia_bold_CA_magna <- subset(daphnia_bold_df,species_name=="Daphnia magna" & country== "Canada") #subset for two parameters
+daphnia_bold_CH_magna <- subset(daphnia_bold_df,species_name=="Daphnia magna" & country== "China") 
+
+sample_CA_magna <- sample(daphnia_bold_CA_magna$nucleotides,1) #sample 1 magna sequence from Canada
+sample_CH_magna <- sample(daphnia_bold_CH_magna$nucleotides,1) #sample 1 magna sequence from China
+
+hist1.1 <- levenshteinSim(sample_CA_magna , sample_CH_magna) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.86 similarity 
+
+#same species different countries 2
+
+daphnia_bold_CA_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") #subset for two parameters
+daphnia_bold_CH_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "China") 
+
+sample_CA_dentifera <- sample(daphnia_bold_CA_dentifera$nucleotides,1) #sample 1 dentifera sequence from Canada
+sample_CH_dentifera <- sample(daphnia_bold_CH_dentifera$nucleotides,1) #sample 1 dentifera sequence from China
+
+hist1.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_dentifera) #Compare the two using Damerau–Levenshtein distance metric (the minimum number of single-character edits (insertions, deletions or substitutions) 0.92 similarity 
+
+x1 <- c("CA dentifera vs CH dentifera","CA Magna vs CH Magna")
+y1 <- c(hist1.1,hist1.2)
+
+barplot(y1, main="Same species in different countries", xlab=c("1. CA dentifera vs CH dentifera = 0.92","2. CA Magna vs CH Magna = 0.86"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+
+
+#Barplot 2 ####
+
+#different species same countries 1
+
+daphnia_bold_CA_dentifera <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
+##daphnia_bold_CA_pulex <- subset(daphnia_bold_df,species_name=="Daphnia dentifera" & country== "Canada") 
+
+sample_CA_magna <- sample(daphnia_bold_CA_magna$nucleotides,1)
+
+sample_CA_dentifera <- sample(daphnia_bold_CA_dentifera$nucleotides,1)
+
+hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_dentifera) # 0.47 similarity
+##hist2.1 <- levenshteinSim(sample_CA_magna , sample_CA_pulex) # 0.47 similarity
+
+#different species same countries 2
+
+hist2.2 <- levenshteinSim(sample_CH_magna , sample_CH_dentifera) # 0.75 similarity 
+
+x2 <- c("CA Magna  vs CA Dentifera", "CH Magna vs CH Dentifera")
+##x2 <- c("CA Magna  vs CA Pulex", "CH Magna vs CH Dentifera")
+y2 <- c(hist2.1,hist2.2)
+
+
+barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Dentifera = 0.47","2. CH Magna vs CH Dentifera = 0.75"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+##barplot(y2, main="Different species in same countries", xlab=c("1. CA Magna  vs CA Pulex = 0.47","2. CH Magna vs CH Dentifera = 0.75"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+
+
+
+#Barplot 3 ####
+
+#different species different countries 1
+
+hist3.1 <- levenshteinSim(sample_CA_magna , sample_CH_dentifera) # 0.73 similarity
+
+#different species different countries 2
+
+daphnia_bold_CH_galeata <- subset(daphnia_bold_df,species_name=="Daphnia galeata" & country== "China") 
+sample_CH_galeata <- sample(daphnia_bold_CH_galeata$nucleotides,1)
+
+hist3.2 <- levenshteinSim(sample_CA_dentifera , sample_CH_galeata) # 0.48
+##hist3.2 <- levenshteinSim(sample_CA_pulex , sample_CH_galeata) # 0.48
+
+x3 <- c("CA Magna vs CH Dentifera", "CA Dentifera vs CH Galeata")
+##x3 <- c("CA Magna vs CH dentifera", "CA pulex vs CA galeata")
+y3 <- c(hist3.1,hist3.2)
+
+barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH Dentifera = 0.73","2. CA Dentifera vs CH Galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+##barplot(y3, main="Different species in different countries", xlab=c("1. CA Magna vs CH dentifera = 0.73","2. CA pulex vs CA galeata = 0.48"), ylab="Percentage of Distance similarity", border="blue", density=c(90, 70, 50, 40, 30, 20, 10), ylim=c(0,1))
+
+
+###################################################################################################
+#World map
+
+install.packages('rworldmap')
+library(rworldmap)
+
+count_daphnia_bold <- daphnia_bold_df %>%
+  group_by(country) %>%
+  summarise(n = length(bin_uri)) %>%
+  arrange(desc(n)) %>%
+  print()
+length(unique(count_daphnia_bold$n))  
+Country_list <- unique(count_daphnia_bold$country)
+countries <- c(Country_list)
+
+country_iso3 <- unlist(lapply(countries, rwmGetISO3))
+map_df <- data.frame(country = country_iso3, Value = count_daphnia_bold$n)
+join_map <- joinCountryData2Map(map_df, joinCode = "ISO3", nameJoinColumn = "country")
+#these three functions below need to run together.
+mapDevice()
+mapCountryData(mapToPlot = join_map, nameColumnToPlot = "Value", numCats = 17,
+               xlim = NA, ylim = NA, mapRegion = "world", catMethod = "logFixedWidth",
+               colourPalette = "terrain", addLegend = TRUE, borderCol = "grey",
+               mapTitle = "", oceanCol = 'lightblue', aspect = 1,
+               missingCountryCol = "white", add = FALSE, nameColumnToHatch = "",
+               lwd = 0.5)
+dev.copy2pdf(file = 'map.pdf')
+
+# 6##### 
+#Provide an interpretation of your visualization. Also, what further work or statistical test would you hypothetically perform in the future to answer your biological question more fully? (Note that answering this section does not require R code to perform such an analysis, but you are welcome to do so if you wish.)
+
+#The results from our statistical analysis mostly math our expectations and original hypothesis. Barplot 1 showing the similarity score between the same speices (magna and dentifera) in two different regions (Canada and China) are expected. The same species has very high similarity (0.80-0.90) despite being in a different region while also not being 100% identical.
+
+#Barplot 2 shows how different species relate to eachother when in the same region. Here the results for each pair differ where Magna and Pulex have a relatively low similarity score in their DNA sequence - 0.47 whilst Magna and Dentifera have a much higher one - 0.75. This suggests that Magna and Dentifera are more closely related in their phylogeny. 
+
+#Barplot 3 shows how different species related to eachother in different countries. Our expectation for this testing would be a low similarity yet Magna and Dentifera, once again, show a high distance similarity score of 0.73 whereas Pulex and Galeata have 0.48. Although part of the same genus, Pulex and Galeata are not as closely related as the other two. 
+
+#Future analysis is needed to further explore these questions. AN attempt was made to create a world map to visualise and plot the different species, which could be achieved with a workaround for Google's restriction on google map hits. Pairwise alignment along with MSAs could also shed more light on the phylogeny of our chosen sample DNA sequences, further explaining the results.
+
+
+# References ####
+
+# Tutorial: https://ropensci.org/tutorials/rentrez_tutorial/
